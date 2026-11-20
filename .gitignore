@@ -11,5 +11,6 @@ dist/
 *.log
 # Embedding загварын кэш, том өгөгдөл
 .cache/
-models/
+# embedding загварын кэш (зөвхөн root хавтаст; backend/app/models-ийг ignore хийхгүй)
+/models/
 data/private/
