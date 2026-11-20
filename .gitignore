@@ -1,0 +1,15 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+.DS_Store
+*.log
+# Embedding загварын кэш, том өгөгдөл
+.cache/
+models/
+data/private/

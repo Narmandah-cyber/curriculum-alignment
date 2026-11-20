@@ -1,0 +1,4 @@
+# NLP цөмд (А6) хэрэгтэй сангууд. Том тул тусад нь суулгана: pip install -r requirements-nlp.txt
+# Хувилбарыг суулгахдаа баталгаажуулж, энд тогтооно.
+sentence-transformers
+numpy
