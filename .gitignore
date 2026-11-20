@@ -14,3 +14,5 @@ dist/
 # embedding загварын кэш (зөвхөн root хавтаст; backend/app/models-ийг ignore хийхгүй)
 /models/
 data/private/
+*.db
+*.tsbuildinfo

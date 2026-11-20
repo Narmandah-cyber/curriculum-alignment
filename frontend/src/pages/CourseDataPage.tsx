@@ -1,10 +1,11 @@
 // Boundary: ХичээлийнӨгөгдөлДэлгэц (proto-03; UC2, ФШ-04..06, 11, 21). Хариуцагч: Б6
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
-  addClo, addItem, deleteClo, deleteItem, getCourse, importCsv, listClos, listItems, updateClo, updateItem,
+  addClo, addItem, deleteClo, deleteItem, getCourse, importCsv, listClos, listItems, listVersions, updateClo, updateItem,
 } from "../api/courses";
-import type { Clo, ImportResult, Item, ItemType } from "../api/types";
+import type { Clo, ImportResult, Item, ItemType, Version } from "../api/types";
+import { HistoryBanner, VersionPicker } from "../components/CoursePicker";
 import { useAuth } from "../auth";
 import {
   Alert, BloomLegend, BloomLevel, Button, Empty, Field, ITEM_TYPE_NAMES, LevelSourceTag, Loading, Modal, PageHeader, Tag,
@@ -18,7 +19,16 @@ export default function CourseDataPage({ openAnalysis = false }: { openAnalysis?
   const nav = useNavigate();
   const { user } = useAuth();
   const course = useAsync(() => getCourse(id), [id]);
-  const vid = course.data?.active_version?.id;
+  const versions = useAsync(() => listVersions(id), [id]);
+  const [params, setParams] = useSearchParams();
+  // ?version=ID — түүх хувилбарыг харах (ФШ-07); байхгүй бол идэвхтэй хувилбар
+  const vParam = Number(params.get("version")) || null;
+  const version: Version | null = (versions.data ?? []).find((v) => v.id === vParam) ?? course.data?.active_version ?? null;
+  const vid = version?.id;
+  const selectVersion = (v: number) => setParams((p) => {
+    if (v === course.data?.active_version?.id) p.delete("version"); else p.set("version", String(v));
+    return p;
+  });
   const clos = useAsync(() => (vid ? listClos(vid) : Promise.resolve([] as Clo[])), [vid]);
   const items = useAsync(() => (vid ? listItems(vid) : Promise.resolve([] as Item[])), [vid]);
   const [editClo, setEditClo] = useState<Clo | "new" | null>(null);
@@ -31,9 +41,10 @@ export default function CourseDataPage({ openAnalysis = false }: { openAnalysis?
   useCrumbs(["Миний хичээлүүд", c ? `${c.code} ${c.name}` : "…"]);
   if (course.error) return <Alert>{course.error}</Alert>;
   if (!c) return <Loading />;
-  const editable = c.teacher_id === user?.id && c.active_version?.status === "active";
+  const owner = c.teacher_id === user?.id;
+  const editable = owner && version?.status === "active";
 
-  const reloadAll = () => { void clos.reload(); void items.reload(); void course.reload(); };
+  const reloadAll = () => { void clos.reload(); void items.reload(); void course.reload(); void versions.reload(); };
 
   async function remove(kind: "clo" | "item", obj: Clo | Item, label: string) {
     if (!confirm(`«${label}»-г устгах уу? Холбогдох холбоосууд мөн устна.`)) return;
@@ -48,17 +59,22 @@ export default function CourseDataPage({ openAnalysis = false }: { openAnalysis?
       <PageHeader
         title={`${c.code} · ${c.name}`}
         subtitle={<>Хичээлийн суралцахуйн үр дүн ба сургалтын элементүүд
-          {c.active_version && <> · v{c.active_version.version_no} ({c.active_version.academic_year}) · <Link to={`/courses/${c.id}/versions`}>Хувилбарын түүх</Link></>}
+          {version && <> · v{version.version_no} ({version.academic_year}) · <Link to={`/courses/${c.id}/versions`}>Хувилбарын түүх</Link></>}
+          {version && <> · <Link to={`/matrix?course=${c.id}${version.status === "history" ? `&version=${version.id}` : ""}`}>Хамрах хүрээ</Link></>}
         </>}
-        actions={editable && <>
-          <Button onClick={() => setImporting(true)}>⤓ CSV импортлох</Button>
-          <Button kind="primary" onClick={() => setAnalysis(true)}>▶ Шинжилгээ ажиллуулах</Button>
+        actions={<>
+          <VersionPicker versions={versions.data ?? []} version={version} onSelect={selectVersion} />
+          {editable && <>
+            <Button onClick={() => setImporting(true)}>⤓ CSV импортлох</Button>
+            <Button kind="primary" onClick={() => setAnalysis(true)}>▶ Шинжилгээ ажиллуулах</Button>
+          </>}
         </>}
       />
-      {!editable && <Alert tone="blue">Зөвхөн харах горим: энэ хичээлийг зөвхөн тухайн хичээлийн багш засна (ФБШ-04).</Alert>}
+      <HistoryBanner version={version} onActive={() => c.active_version && selectVersion(c.active_version.id)} />
+      {!owner && <Alert tone="blue">Зөвхөн харах горим: энэ хичээлийг зөвхөн тухайн хичээлийн багш засна (ФБШ-04).</Alert>}
       {error && <Alert>{error}</Alert>}
 
-      <div className="grid-2" style={{ marginTop: editable ? 0 : 16 }}>
+      <div className="grid-2" style={{ marginTop: owner ? 0 : 16 }}>
         <div className="card table-card">
           <div className="card-head">
             <h3>Суралцахуйн үр дүн (CLO)</h3>

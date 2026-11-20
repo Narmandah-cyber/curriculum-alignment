@@ -76,3 +76,12 @@ export interface ManualLinkIn {
   source_type: "clo" | "plo"; source_id: number; target_type: "item" | "plo" | "cs2023" | "skill";
   target_id: number; strength: Strength;
 }
+
+// --- CLO–PLO санал (ФШ-14) ---
+export interface CloPloCell {
+  link_id: number; clo_id: number; plo_id: number; score: number; strength: Strength; status: LinkStatus;
+  level_gap: LevelGap; method: Method; matched_terms: string[];
+}
+export interface CloPlo {
+  version: Version; programs: Program[]; plos: Plo[]; clos: Clo[]; cells: CloPloCell[]; proposed: number; confirmed: number;
+}

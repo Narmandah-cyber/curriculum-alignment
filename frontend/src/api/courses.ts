@@ -1,7 +1,7 @@
 // Хичээлийн талын API (docs/API.md: courses, analysis, links). Хариуцагч: Б2, Б3, Б5, Б7.
 import { api } from "./client";
 import type {
-  Clo, CloIn, Course, CourseIn, CourseRun, Gaps, ImportResult, Item, ItemIn, ManualLinkIn, Matrix, Method,
+  Clo, CloIn, CloPlo, Course, CourseIn, CourseRun, Gaps, ImportResult, Item, ItemIn, ManualLinkIn, Matrix, Method,
   Strength, User, Version, VersionCompare,
 } from "./types";
 
@@ -52,6 +52,7 @@ export const runCourseAnalysis = (courseId: number, method: Method, llm: boolean
 export const getRun = (runId: number) => api<CourseRun>(`/runs/${runId}`);
 export const getMatrix = (versionId: number) => api<Matrix>(`/versions/${versionId}/matrix`);
 export const getGaps = (versionId: number) => api<Gaps>(`/versions/${versionId}/gaps`);
+export const getCloPlo = (versionId: number) => api<CloPlo>(`/versions/${versionId}/clo-plo`);
 
 // Холбоос (UC4) — А10
 export const confirmLink = (id: number) => api<unknown>(`/links/${id}/confirm`, { method: "POST" });

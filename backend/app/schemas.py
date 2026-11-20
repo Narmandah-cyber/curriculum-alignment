@@ -255,3 +255,28 @@ class GapsOut(BaseModel):
     level_gaps: list[GapLink]
     uncovered_clos: list[UncoveredClo]
     unaligned_items: list[ItemOut]
+
+
+# ---------------------------------------------------------------------------
+# CLO–PLO холбоосын санал (ФШ-14; Б5)
+# ---------------------------------------------------------------------------
+class CloPloCell(BaseModel):
+    link_id: int
+    clo_id: int
+    plo_id: int
+    score: float
+    strength: str
+    status: str
+    level_gap: str          # Δ = L(CLO) − L(PLO)
+    method: str
+    matched_terms: list[str] = []
+
+
+class CloPloOut(BaseModel):
+    version: VersionOut
+    programs: list[ProgramOut]     # хичээл хамааруулсан хөтөлбөрүүд (program_courses, А4)
+    plos: list[PloOut]
+    clos: list[CloOut]
+    cells: list[CloPloCell]
+    proposed: int
+    confirmed: int

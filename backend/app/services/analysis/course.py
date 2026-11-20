@@ -7,6 +7,7 @@
     _bloom_levels        ↔ блумТүвшинТодорхойлох()
     scorer.score         ↔ сэдвийнОнооТооцох() / хосолсонОнооТооцох()
     _propose_link        ↔ холбоосСаналҮүсгэх()
+    _clo_plo             ↔ CLO_PLOСаналГаргах() (ФШ-14)
     level_gap            ↔ түвшнийЗөрүүАнгилах()
     gaps()               ↔ хамрагдаагүйТэмдэглэх() / зорилгогүйТэмдэглэх()
     _progress            ↔ явцШинэчлэх()
@@ -25,7 +26,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.models import AnalysisRun, Clo, CourseVersion, LearningItem, Link, Setting
+from app.models import AnalysisRun, Clo, CourseVersion, LearningItem, Link, Plo, ProgramCourse, Setting
 from app.services.bloom.classifier import BloomClassifier
 from app.services.bloom.levels import BloomDictionary, assess, level_gap, load_dictionary
 from app.services.nlp.preprocess import tokens
@@ -219,7 +220,8 @@ class CourseAnalysis:
             select(Link).where(Link.source_type == "clo", Link.target_type == "item",
                                Link.source_id.in_(clo_ids), Link.status.in_(("confirmed", "rejected"))))}
 
-        total, done = len(clos) * len(items), 0
+        plos = course_plos(self.db, run.version_id)
+        total, done = len(clos) * (len(items) + len(plos)), 0
         for i, c in enumerate(clos):
             for j, it in enumerate(items):
                 s = round(scorer.score(i, j, clo_texts[i], item_texts[j]), 4)
@@ -227,6 +229,8 @@ class CourseAnalysis:
                     self._propose_link(run, c, it, s, cfg)
                 done += 1
             self._progress(run, done, total)
+        if plos:
+            self._clo_plo(run, cfg, clos, clo_texts, plos, done, total)
 
     def _prepare(self, clos: list[Clo], items: list[LearningItem]) -> tuple[list[str], list[str]]:
         """текстБэлтгэх()."""
@@ -252,16 +256,60 @@ class CourseAnalysis:
         self.db.add(lk)
         return lk
 
+    def _clo_plo(self, run: AnalysisRun, cfg: AnalysisSettings, clos: list[Clo], clo_texts: list[str],
+                 plos: list[Plo], done: int, total: int) -> None:
+        """CLO_PLOСаналГаргах() (ФШ-14): CLO бүрийг хичээл хамаарах хөтөлбөрүүдийн PLO-той харьцуулна.
+
+        CLO–элементийн адил арга, босгыг хэрэглэнэ. Δ = L(CLO) − L(PLO): хичээлийн үр дүн хөтөлбөрийн
+        үр дүнгээс доогуур түвшинд байвал «доогуур». PLO-ийн түвшинг өөрчлөхгүй (хөтөлбөрийн тал — А).
+        """
+        plo_texts = [p.text for p in plos]
+        scorer = self._scorer(run.method, cfg, clo_texts, plo_texts)
+        clo_ids = [c.id for c in clos]
+        self.db.execute(delete(Link).where(Link.source_type == "clo", Link.target_type == "plo",
+                                           Link.status == "proposed", Link.source_id.in_(clo_ids)))
+        decided = {(lk.source_id, lk.target_id) for lk in self.db.scalars(
+            select(Link).where(Link.source_type == "clo", Link.target_type == "plo",
+                               Link.source_id.in_(clo_ids), Link.status.in_(("confirmed", "rejected"))))}
+        dictionary = self._dictionary or load_dictionary(self.db)
+        plo_levels = {p.id: p.bloom_level or _level(p.text, dictionary, self._classifier) for p in plos}
+        for i, c in enumerate(clos):
+            for j, p in enumerate(plos):
+                s = round(scorer.score(i, j, clo_texts[i], plo_texts[j]), 4)
+                if s >= cfg.threshold and (c.id, p.id) not in decided:
+                    self.db.add(Link(run_id=run.id, source_type="clo", source_id=c.id, target_type="plo",
+                                     target_id=p.id, strength="direct" if s >= cfg.direct_threshold else "partial",
+                                     score=s, method=scorer.name,
+                                     level_gap=level_gap(c.bloom_level or 1, plo_levels[p.id] or 1),
+                                     status="proposed"))
+                done += 1
+            self._progress(run, done, total)
+
     def _progress(self, run: AnalysisRun, done: int, total: int) -> None:
         """явцШинэчлэх() (ФБШ-02)."""
         run.progress = min(99, int(done * 100 / total))
         self.db.commit()
 
 
+def _level(text: str, dictionary: BloomDictionary, classifier: BloomClassifier) -> int | None:
+    r = assess(text, dictionary, classifier)
+    return r.level if r else None
+
+
+def course_plos(db: Session, version_id: int) -> list[Plo]:
+    """Хувилбарын хичээл хамааруулсан (program_courses, А4) хөтөлбөрүүдийн PLO."""
+    v = db.get(CourseVersion, version_id)
+    if v is None:
+        return []
+    program_ids = select(ProgramCourse.program_id).where(ProgramCourse.course_id == v.course_id)
+    return list(db.scalars(select(Plo).where(Plo.program_id.in_(program_ids)).order_by(Plo.program_id, Plo.code)))
+
+
 # --------------------------------------------------------------------------- Үр дүн унших (UC5)
-def version_links(db: Session, version_id: int) -> list[Link]:
+def version_links(db: Session, version_id: int, target_type: str = "item") -> list[Link]:
+    """Хувилбарын CLO-оос гарах холбоосууд: target_type="item" (ФШ-10) эсвэл "plo" (ФШ-14)."""
     clo_ids = select(Clo.id).where(Clo.version_id == version_id)
-    return list(db.scalars(select(Link).where(Link.source_type == "clo", Link.target_type == "item",
+    return list(db.scalars(select(Link).where(Link.source_type == "clo", Link.target_type == target_type,
                                               Link.source_id.in_(clo_ids))))
 
 
