@@ -17,7 +17,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type"))
     headers.set("Content-Type", "application/json");
   const res = await fetch(`/api${path}`, { ...init, headers });
-  if (res.status === 401) auth.clear();
+  if (res.status === 401) {
+    auth.clear();
+    if (!location.pathname.startsWith("/login")) location.assign("/login");
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new ApiError(res.status, body.detail ?? res.statusText);

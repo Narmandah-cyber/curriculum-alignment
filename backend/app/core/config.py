@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     # Шинжилгээний анхны утгууд (settings хүснэгтэд хадгалагдсаныг давуу гэж үзнэ)
     embedding_model: str = "sentence-transformers/LaBSE"
     link_threshold: float = 0.5               # θ — тэмдэглэгээтэй өгөгдөл дээр сонгоно
+    direct_threshold: float = 0.7             # s ≥ энэ бол «шууд», θ ≤ s < энэ бол «хэсэгчлэн» (Б5)
     hybrid_lambda: float = 0.7                # λ — тэмдэглэгээтэй өгөгдөл дээр сонгоно
     min_skill_frequency: float = 0.1          # τ
     llm_enabled: bool = False

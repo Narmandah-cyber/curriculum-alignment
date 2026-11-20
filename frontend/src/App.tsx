@@ -1,9 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { auth } from "./api/client";
 import Layout from "./components/Layout";
+import { Todo } from "./components/ui";
 import AdminPage from "./pages/AdminPage";
-import AnalysisDialog from "./pages/AnalysisDialog";
 import CourseDataPage from "./pages/CourseDataPage";
+import CoursesPage from "./pages/CoursesPage";
 import DashboardPage from "./pages/DashboardPage";
 import LevelGapPage from "./pages/LevelGapPage";
 import LoginPage from "./pages/LoginPage";
@@ -22,14 +23,18 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireAuth><Layout /></RequireAuth>}>
         <Route index element={<DashboardPage />} />
-        <Route path="courses" element={<CourseDataPage />} />
-        <Route path="courses/:id/analysis" element={<AnalysisDialog />} />
+        <Route path="courses" element={<CoursesPage />} />
+        <Route path="courses/:id" element={<CourseDataPage />} />
+        {/* ШинжилгээЦонх (proto-04) нь хичээлийн хуудас дээрх цонх */}
+        <Route path="courses/:id/analysis" element={<CourseDataPage openAnalysis />} />
         <Route path="courses/:id/versions" element={<VersionHistoryPage />} />
         <Route path="matrix" element={<MatrixPage />} />
         <Route path="gaps" element={<LevelGapPage />} />
         <Route path="program" element={<ProgramAnalysisPage />} />
         <Route path="postings" element={<PostingImportPage />} />
+        <Route path="reports" element={<Todo task="А12">Тайланг хамрах хүрээний матрицын «Тайлан» товчоор татна (UC9).</Todo>} />
         <Route path="admin" element={<AdminPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
   );
