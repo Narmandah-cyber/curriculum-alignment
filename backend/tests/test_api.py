@@ -34,4 +34,4 @@ def test_teacher_cannot_create_program(client, db):
 
 
 def test_stub_returns_501(client):
-    assert client.get("/api/courses").status_code == 501
+    assert client.get("/api/users").status_code == 501

@@ -46,6 +46,20 @@ Backend асаахад бүрэн баримт `http://localhost:8000/docs` (Swa
 | DELETE | `/api/items/{item_id}` | Б2 |  |
 | POST | `/api/versions/{version_id}/import` | Б2 | CSV импорт (ФШ-06), алдаатай мөрийн жагсаалт буцаана |
 
+Оролт, гаралт (Б2, Б3 — хэрэгжсэн; бүрэн схем: `/docs`):
+
+- `GET /api/courses?mine=true` → `CourseOut[]`: `{id, code, name, credits, teacher_id, active_version: VersionOut, summary: {analyzed, coverage, proposed, uncovered_clos, level_gaps}}`. `mine=false` — coordinator/admin бүх хичээл.
+- `POST /api/courses` (зөвхөн `teacher`): `{code, name, credits, academic_year: "2026-2027"}` → v1 идэвхтэй хувилбартай `CourseOut`. Код давхардвал 409.
+- `VersionOut`: `{id, course_id, version_no, academic_year, status, previous_version_id, created_at, clo_count, item_count}`.
+- `POST /api/courses/{id}/versions`: `{academic_year}` → шинэ `VersionOut`; тухайн оны хувилбар байвал 409.
+- `GET /api/versions/compare?v1=&v2=` → `{v1, v2, added, modified, removed, changes: [{change, kind: clo|item, key, old_text, new_text}]}`. CLO-г кодоор, элементийг гарчгаар тааруулна.
+- `POST /api/versions/{id}/clos`: `{code, text, bloom_level?}` — `bloom_level` өгвөл `level_source=manual`, үгүй бол автомат.
+- `PATCH /api/clos/{id}`: `{code?, text?, bloom_level?}` — `bloom_level: null` бол автомат руу буцна (ФШ-21).
+- `CloOut` / `ItemOut` нэмэлт талбар: `level_reason` — түвшний үндэслэл (ФШ-11): «Үйл үг: «зохиох»», «Ангилагч: итгэл 0.41», «Гараар зассан».
+- `POST /api/versions/{id}/items`: `{type, title, text, question_text?, bloom_level?}`.
+- `POST /api/versions/{id}/import?kind=clo|item` (multipart `file`) → `{imported, errors: [{row, reason}]}`. Багана дутуу бол 400.
+- Эрх (ФБШ-04): засах — зөвхөн хичээлийн багш (403); харах — багш, coordinator, admin. Түүх хувилбарыг засвал 409.
+
 ## postings
 
 | Арга | Зам | Хариуцагч | Тайлбар |
@@ -66,6 +80,13 @@ Backend асаахад бүрэн баримт `http://localhost:8000/docs` (Swa
 | GET | `/api/programs/{program_id}/matrix` | А9 | ?kind=plo-course|plo-cs2023 (ФШ-23) |
 | GET | `/api/runs/{run_id}/missing-skills` | А9 | Хөтөлбөрт дутуу ур чадвар (ФШ-18) |
 
+Хичээлийн шинжилгээ (Б5 — хэрэгжсэн):
+
+- `POST /api/courses/{id}/analysis`: `{method: rule|embedding|hybrid, llm: bool}` → **202** `{id, status: "running", progress, version_id, threshold, notice}`. Арын ажлаар (BackgroundTasks) гүйнэ. CLO эсвэл элемент байхгүй бол 409. Embedding загвар бэлэн биш бол дүрмийн аргаар гүйж, `method=rule` болно.
+- Frontend явцыг `GET /api/runs/{id}`-ээр асууна; А11 хэрэгжээгүй (501) үед матрицын `run` талбараар.
+- `GET /api/versions/{id}/matrix` → `{version, clos, items, cells: [{link_id, clo_id, item_id, score, strength, status, level_gap, method, matched_terms, llm_explanation}], run, proposed, confirmed}`. Татгалзсан холбоос орохгүй.
+- `GET /api/versions/{id}/gaps` → `{match, below, above, unaligned, level_gaps: [{link_id, clo, item, level_gap, status, score}], uncovered_clos: [CloOut + has_proposed], unaligned_items}`. Үнэлгээний элемент = lab, assignment, exam. Хамрагдаагүй = баталгаажсан холбоосгүй (ФШ-13).
+
 ## links
 
 | Арга | Зам | Хариуцагч | Тайлбар |
@@ -76,6 +97,9 @@ Backend асаахад бүрэн баримт `http://localhost:8000/docs` (Swa
 | POST | `/api/links/{link_id}/strength` | А10 | хүчӨөрчлөх() |
 | POST | `/api/links/{link_id}/reject` | А10 | татгалзах() |
 | GET | `/api/links/{link_id}/history` | А10 | холбоосынТүүхАвах() |
+
+Frontend (Б7) дуудаж буй оролт — **А10 хэрэгжүүлэхдээ баталгаажуулна уу**:
+`POST /api/links` `{source_type, source_id, target_type, target_id, strength}`; `POST /api/links/{id}/strength` `{strength: direct|partial}`; `confirm`, `reject` — body-гүй. Амжилттай бол ямар ч JSON буцааж болно (frontend матрицыг дахин ачаална).
 
 ## reports
 
