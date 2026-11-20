@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getGaps, listItems } from "../api/courses";
 import type { Item, UncoveredClo } from "../api/types";
-import { CoursePicker, useSelectedCourse } from "../components/CoursePicker";
+import { CoursePicker, HistoryBanner, useSelectedCourse, VersionPicker } from "../components/CoursePicker";
 import { AddLinkModal } from "../components/LinkModals";
 import { Alert, BloomLevel, Button, Empty, GAP, ITEM_TYPE_NAMES, LINK_STATUS, Loading, PageHeader, StatCard, Tag } from "../components/ui";
 import { useAsync, useCrumbs } from "../hooks";
@@ -12,8 +12,8 @@ const ASSESSMENT = ["lab", "assignment", "exam"];
 
 export default function LevelGapPage() {
   const nav = useNavigate();
-  const { courses, course, select, error: cErr, loading: cLoading } = useSelectedCourse();
-  const vid = course?.active_version?.id;
+  const { courses, course, select, error: cErr, loading: cLoading, versions, version, selectVersion } = useSelectedCourse();
+  const vid = version?.id;
   const g = useAsync(() => (vid ? getGaps(vid) : Promise.resolve(null)), [vid]);
   const items = useAsync(() => (vid ? listItems(vid) : Promise.resolve([] as Item[])), [vid]);
   const [adding, setAdding] = useState<UncoveredClo | null>(null);
@@ -29,11 +29,15 @@ export default function LevelGapPage() {
     <>
       <PageHeader title="Түвшний зөрүү ба хамрагдаагүй үр дүн"
         subtitle="Блумын шинэчилсэн ангиллаар CLO болон үнэлгээний түвшинг харьцуулсан"
-        actions={<CoursePicker courses={courses} course={course} onSelect={select} />} />
+        actions={<>
+          <CoursePicker courses={courses} course={course} onSelect={select} />
+          <VersionPicker versions={versions} version={version} onSelect={selectVersion} />
+        </>} />
+      <HistoryBanner version={version} onActive={() => course.active_version && selectVersion(course.active_version.id)} />
       {g.error && <Alert>{g.error}</Alert>}
       {!d ? <Loading /> : (
         <>
-          {!course.summary.analyzed && <div style={{ marginBottom: 16 }}><Alert tone="blue">Шинжилгээ хийгдээгүй байна. <Link to={`/courses/${course.id}/analysis`}>Шинжилгээ ажиллуулах</Link></Alert></div>}
+          {version?.status === "active" && !course.summary.analyzed && <div style={{ marginBottom: 16 }}><Alert tone="blue">Шинжилгээ хийгдээгүй байна. <Link to={`/courses/${course.id}/analysis`}>Шинжилгээ ажиллуулах</Link></Alert></div>}
           <div className="grid-4">
             <StatCard label="Нийцсэн холбоос" value={d.match} tone="green" />
             <StatCard label="Доогуур түвшин" value={d.below} tone="red" />
@@ -55,7 +59,7 @@ export default function LevelGapPage() {
                         <td><BloomLevel level={x.item.bloom_level} /></td>
                         <td><Tag tone={GAP[x.level_gap].tone}>{GAP[x.level_gap].label}</Tag>
                           {x.status !== "confirmed" && <div className="muted small">{LINK_STATUS[x.status].label}</div>}</td>
-                        <td><Button small onClick={() => nav(`/matrix?course=${course.id}&link=${x.link_id}`)}>Харах</Button></td>
+                        <td><Button small onClick={() => nav(`/matrix?course=${course.id}${version?.status === "history" ? `&version=${version.id}` : ""}&link=${x.link_id}`)}>Харах</Button></td>
                       </tr>
                     ))}
                   </tbody>
@@ -73,8 +77,8 @@ export default function LevelGapPage() {
                     {c.has_proposed ? "Үнэлгээний холбоосын санал байгаа ч баталгаажаагүй." : "Баталгаажсан үнэлгээний холбоос байхгүй."}
                   </div>
                   <div className="row">
-                    <Button small onClick={() => setAdding(c)} disabled={!assessments.length}>Холбоос нэмэх</Button>
-                    {c.has_proposed && <Button small kind="ghost" onClick={() => nav(`/matrix?course=${course.id}`)}>Санал харах →</Button>}
+                    {version?.status === "active" && <Button small onClick={() => setAdding(c)} disabled={!assessments.length}>Холбоос нэмэх</Button>}
+                    {c.has_proposed && <Button small kind="ghost" onClick={() => nav(`/matrix?course=${course.id}${version?.status === "history" ? `&version=${version.id}` : ""}`)}>Санал харах →</Button>}
                   </div>
                 </div>
               ))}

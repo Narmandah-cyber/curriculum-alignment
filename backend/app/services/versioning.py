@@ -65,7 +65,7 @@ def renew(db: Session, course_id: int, academic_year: str) -> CourseVersion:
 
 
 def _copy(db: Session, old: CourseVersion, new: CourseVersion) -> None:
-    """хуулах(): CLO, элемент, баталгаажсан CLO–элемент холбоосыг шинэ хувилбарт хуулна."""
+    """хуулах(): CLO, элемент, баталгаажсан CLO–элемент ба CLO–PLO холбоосыг шинэ хувилбарт хуулна."""
     clo_map: dict[int, int] = {}
     for c in db.scalars(select(Clo).where(Clo.version_id == old.id)):
         n = Clo(version_id=new.id, code=c.code, text=c.text, bloom_level=c.bloom_level,
@@ -82,14 +82,18 @@ def _copy(db: Session, old: CourseVersion, new: CourseVersion) -> None:
         item_map[i.id] = n.id
     if not clo_map:
         return
-    confirmed = db.scalars(select(Link).where(Link.source_type == "clo", Link.target_type == "item",
+    confirmed = db.scalars(select(Link).where(Link.source_type == "clo", Link.target_type.in_(("item", "plo")),
                                               Link.status == "confirmed",
                                               Link.source_id.in_(list(clo_map))))
     for lk in confirmed:
-        if lk.target_id not in item_map:
-            continue
-        db.add(Link(run_id=None, source_type="clo", source_id=clo_map[lk.source_id], target_type="item",
-                    target_id=item_map[lk.target_id], strength=lk.strength, score=lk.score, method=lk.method,
+        if lk.target_type == "item":
+            if lk.target_id not in item_map:
+                continue
+            target = item_map[lk.target_id]
+        else:
+            target = lk.target_id               # PLO нь хөтөлбөрийнх, хувилбараар хуулагдахгүй (ФШ-14)
+        db.add(Link(run_id=None, source_type="clo", source_id=clo_map[lk.source_id], target_type=lk.target_type,
+                    target_id=target, strength=lk.strength, score=lk.score, method=lk.method,
                     level_gap=lk.level_gap, status="confirmed", llm_explanation=lk.llm_explanation))
 
 

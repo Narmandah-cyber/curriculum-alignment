@@ -15,18 +15,29 @@ from app.api.routers.courses import (
     version_out,
 )
 from app.db.session import get_db
-from app.models import AnalysisRun, Clo, LearningItem, User
+from app.models import AnalysisRun, Clo, LearningItem, Program, ProgramCourse, User
 from app.schemas import (
+    CloPloCell,
+    CloPloOut,
     CourseAnalysisIn,
     CourseRunOut,
     GapLink,
     GapsOut,
     MatrixCell,
     MatrixOut,
+    PloOut,
+    ProgramOut,
     UncoveredClo,
 )
 from app.services import versioning
-from app.services.analysis.course import CourseAnalysis, gaps, item_text, matched_terms, version_links
+from app.services.analysis.course import (
+    CourseAnalysis,
+    course_plos,
+    gaps,
+    item_text,
+    matched_terms,
+    version_links,
+)
 from app.services.bloom.levels import load_dictionary
 
 router = APIRouter(prefix="/api", tags=["analysis"])
@@ -97,6 +108,27 @@ def course_matrix(version_id: int, db: Session = Depends(get_db), user: User = D
     return MatrixOut(version=version_out(db, v), clos=[clo_out(c, d) for c in clos],
                      items=[item_out(i, d) for i in items], cells=cells,
                      run=CourseRunOut.model_validate(run) if run else None,
+                     proposed=sum(c.status == "proposed" for c in cells),
+                     confirmed=sum(c.status == "confirmed" for c in cells))
+
+
+@router.get("/versions/{version_id}/clo-plo", response_model=CloPloOut)
+def course_clo_plo(version_id: int, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    """CLO × PLO холбоосын санал (ФШ-14) — Б5. PLO нь хичээл хамааруулсан хөтөлбөрүүдийнх."""
+    v = _version_for_view(db, user, version_id)
+    d = load_dictionary(db)
+    clos = list(db.scalars(select(Clo).where(Clo.version_id == v.id).order_by(Clo.code)))
+    plos = course_plos(db, v.id)
+    by_clo, by_plo = {c.id: c for c in clos}, {p.id: p for p in plos}
+    programs = db.scalars(select(Program).where(Program.id.in_(
+        select(ProgramCourse.program_id).where(ProgramCourse.course_id == v.course_id))).order_by(Program.name))
+    cells = [CloPloCell(link_id=lk.id, clo_id=lk.source_id, plo_id=lk.target_id, score=lk.score,
+                        strength=lk.strength, status=lk.status, level_gap=lk.level_gap, method=lk.method,
+                        matched_terms=matched_terms(by_clo[lk.source_id].text, by_plo[lk.target_id].text))
+             for lk in version_links(db, v.id, "plo")
+             if lk.status != "rejected" and lk.source_id in by_clo and lk.target_id in by_plo]
+    return CloPloOut(version=version_out(db, v), programs=[ProgramOut.model_validate(p) for p in programs],
+                     plos=[PloOut.model_validate(p) for p in plos], clos=[clo_out(c, d) for c in clos], cells=cells,
                      proposed=sum(c.status == "proposed" for c in cells),
                      confirmed=sum(c.status == "confirmed" for c in cells))
 

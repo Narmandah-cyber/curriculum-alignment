@@ -85,6 +85,8 @@ Backend асаахад бүрэн баримт `http://localhost:8000/docs` (Swa
 - `POST /api/courses/{id}/analysis`: `{method: rule|embedding|hybrid, llm: bool}` → **202** `{id, status: "running", progress, version_id, threshold, notice}`. Арын ажлаар (BackgroundTasks) гүйнэ. CLO эсвэл элемент байхгүй бол 409. Embedding загвар бэлэн биш бол дүрмийн аргаар гүйж, `method=rule` болно.
 - Frontend явцыг `GET /api/runs/{id}`-ээр асууна; А11 хэрэгжээгүй (501) үед матрицын `run` талбараар.
 - `GET /api/versions/{id}/matrix` → `{version, clos, items, cells: [{link_id, clo_id, item_id, score, strength, status, level_gap, method, matched_terms, llm_explanation}], run, proposed, confirmed}`. Татгалзсан холбоос орохгүй.
+- `GET /api/versions/{id}/clo-plo` → `{version, programs, plos, clos, cells: [{link_id, clo_id, plo_id, score, strength, status, level_gap, method, matched_terms}], proposed, confirmed}` (ФШ-14). PLO нь `program_courses`-аар (А4 `attach_course`) хичээл хамааруулсан хөтөлбөрүүдийнх. Δ = L(CLO) − L(PLO). Хичээлийн шинжилгээ (`POST /courses/{id}/analysis`) CLO–элемент ба CLO–PLO саналыг хамт гаргана.
+- Бүх `/versions/{id}/...` унших endpoint түүх хувилбарт ч ажиллана (ФШ-07, зөвхөн харах).
 - `GET /api/versions/{id}/gaps` → `{match, below, above, unaligned, level_gaps: [{link_id, clo, item, level_gap, status, score}], uncovered_clos: [CloOut + has_proposed], unaligned_items}`. Үнэлгээний элемент = lab, assignment, exam. Хамрагдаагүй = баталгаажсан холбоосгүй (ФШ-13).
 
 ## links

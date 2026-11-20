@@ -1,6 +1,6 @@
 // Boundary: ХувилбарынТүүхДэлгэц (proto-10; UC12, ФШ-07). Хариуцагч: Б6
 import { useEffect, useState, type FormEvent } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { compareVersions, getCourse, listVersions, renewCourse } from "../api/courses";
 import type { Version, VersionCompare } from "../api/types";
 import { useAuth } from "../auth";
@@ -73,6 +73,10 @@ export default function VersionHistoryPage() {
               </div>
               <span className="muted small">{v.clo_count} CLO · {v.item_count} сургалтын элемент</span>
               <span className="muted small">Үүсгэсэн: {fmtDate(v.created_at)} · {v.status === "active" ? "Засварлах боломжтой" : "🔒 Зөвхөн харах"}</span>
+              <div className="row" onClick={(e) => e.stopPropagation()}>
+                <Link className="small" to={`/courses/${c.id}${v.status === "history" ? `?version=${v.id}` : ""}`}>Өгөгдөл харах →</Link>
+                <Link className="small" to={`/matrix?course=${c.id}${v.status === "history" ? `&version=${v.id}` : ""}`}>Хамрах хүрээ →</Link>
+              </div>
             </div>
           ))}
           <Alert tone="yellow">Хуучин хувилбарын CLO, сургалтын элемент, шинжилгээний үр дүн устахгүй, «түүх» төлөвтэй хадгалагдана. Түүх хувилбарыг засах боломжгүй.</Alert>

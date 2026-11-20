@@ -164,3 +164,9 @@ td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top;
 .version { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; cursor: pointer; display: grid; gap: 6px; background: #fafbfd; }
 .version.active-v { border-color: var(--primary); background: #f5f7ff; }
 .version.picked { box-shadow: 0 0 0 2px var(--highlight) inset; }
+
+/* Tabs (матрицын харагдац) */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font: inherit;
+  font-weight: 600; color: var(--muted); cursor: pointer; margin-bottom: -1px; }
+.tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
