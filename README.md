@@ -75,6 +75,7 @@ docs/                доорх баримтууд
 | [docs/API.md](docs/API.md) | Endpoint-уудын гэрээ |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Давхарга, шинжилгээний урсгал |
 | [docs/DATA.md](docs/DATA.md) | CSV формат, нууцлал, тэмдэглэгээний заавар |
+| [docs/ANNOTATION.md](docs/ANNOTATION.md) | СА3, СА4 тэмдэглэх дүрэм, туршилтын хэрэгсэл (`python -m app.evaluation`) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Git урсгал, код бичих дүрэм |
 
 Холбоос: Figma прототип — https://www.figma.com/design/5srA4sxi0KJgr2MBffcn4g
