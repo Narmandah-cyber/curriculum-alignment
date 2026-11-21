@@ -166,7 +166,7 @@ export default function MatrixPage() {
             </div>
             <div className="legend">
               <span className="tag" style={{ background: "var(--cell-direct)", color: "#fff" }}>Шууд</span>
-              <span className="tag" style={{ background: "var(--cell-partial)", color: "#1f2a55" }}>Хэсэгчлэн</span>
+              <span className="tag" style={{ background: "var(--cell-partial)", color: "var(--navy)" }}>Хэсэгчлэн</span>
               <span className="tag">Холбоогүй</span>
               <span>· Нүдэн дээрх тоо нь ижил төстэй байдлын оноо · ✓ баталгаажсан</span>
             </div>

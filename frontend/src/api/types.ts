@@ -85,3 +85,32 @@ export interface CloPloCell {
 export interface CloPlo {
   version: Version; programs: Program[]; plos: Plo[]; clos: Clo[]; cells: CloPloCell[]; proposed: number; confirmed: number;
 }
+
+// --- Хөтөлбөрийн тал (А3, А4, А5, А7, А9) — Б8-ийн дэлгэц хүлээж буй хариу.
+// Endpoint нь А-гийнх; хариуны бүтцийг docs/API.md «Б8-ийн хүлээж буй хариу»-д санал болгосон.
+export interface PloIn { code: string; text: string; }
+export interface PostingBatch {
+  id: number; program_id: number; name: string; created_at: string | null; posting_count: number;
+  errors?: { row: number; reason: string }[];
+}
+export interface Posting {
+  id: number; title: string; posted_date: string | null; source: string | null;
+  skills: string[]; status: "processed" | "no_skills" | "pending";
+}
+export interface HeatAxis { id: number; code: string; name: string; }
+export interface ProgramMatrix {
+  kind: "plo-cs2023" | "plo-course";
+  rows: HeatAxis[]; cols: HeatAxis[];
+  cells: { link_id: number; row_id: number; col_id: number; score: number; strength: Strength; status: LinkStatus }[];
+  run: AnalysisRun | null;
+  covered_cols?: number;            // хамрагдсан CS2023 чиглэлийн тоо
+}
+export interface MissingSkill { skill: string; frequency: number; count: number; }
+export interface MissingSkills {
+  run_id: number; total_postings: number; extracted_skills: number; market_coverage: number;
+  min_frequency: number; skills: MissingSkill[];
+}
+export interface UserIn { full_name: string; email: string; password: string; roles: Role[]; }
+export interface Setting { key: string; value: string; }
+export interface BloomVerb { id: number; verb: string; level: number; }
+export interface Cs2023Unit { id: number; area: string; code: string; title: string; }

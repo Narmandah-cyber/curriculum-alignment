@@ -13,7 +13,8 @@ function initials(name: string) {
 export default function Layout() {
   const { user, hasRole, logout } = useAuth();
   const [crumbs, setCrumbs] = useState<string[]>([]);
-  const role = user?.roles.includes("teacher") ? "teacher" : user?.roles[0];
+  // Prototype-ийн дагуу хамгийн өндөр эрхийг харуулна: админ > хөтөлбөрийн хариуцагч > багш
+  const role = (["admin", "coordinator", "teacher"] as const).find((r) => user?.roles.includes(r));
 
   return (
     <div className="layout">

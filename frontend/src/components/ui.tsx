@@ -18,7 +18,7 @@ export const BLOOM_COLORS = ["#868e96", "#1c7ed6", "#0ca678", "#f59f00", "#e8590
 export const BLOOM_NAMES = ["Санах", "Ойлгох", "Хэрэглэх", "Задлан шинжлэх", "Үнэлэх", "Бүтээх"];
 
 export function BloomLevel({ level, title }: { level: number | null | undefined; title?: string }) {
-  if (!level) return <span className="bloom empty" title="Тодорхойлоогүй">–</span>;
+  if (!level) return <span className="bloom none" title="Тодорхойлоогүй">–</span>;
   return (
     <span className="bloom" title={title ?? `${level}. ${BLOOM_NAMES[level - 1]}`} style={{ background: BLOOM_COLORS[level - 1] }}>
       {level}
@@ -60,7 +60,7 @@ export function LevelSourceTag({ source, reason }: { source: string | null; reas
     : <Tag tone="green" title={reason ?? undefined}>Автомат</Tag>;
 }
 
-export function StatCard({ label, value, tone }: { label: string; value: ReactNode; tone?: "blue" | "red" | "yellow" | "green" }) {
+export function StatCard({ label, value, tone }: { label: string; value: ReactNode; tone?: "blue" | "red" | "yellow" | "green" | "orange" }) {
   return (
     <div className="card stat">
       <div className="stat-label">{label}</div>
@@ -140,6 +140,21 @@ export function fmtDate(s: string | null | undefined) {
   if (!s) return "—";
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? "—" : `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Backend-д хэрэгжээгүй (501) endpoint-ийн оронд харагдах мэдэгдэл. task — хариуцагчийн дугаар (А3 …). */
+export function Pending({ task, what }: { task: string; what: string }) {
+  return (
+    <div className="pending">
+      <b>{what}</b> — backend-ийн хэсэг ({task}) хараахан хэрэгжээгүй байна. Хэрэгжмэгц энд автоматаар харагдана.
+    </div>
+  );
+}
+
+/** useAsync-ийн алдааг харуулах: 501 бол Pending, бусад үед Alert. */
+export function LoadError({ error, status, task, what }: { error: string | null; status: number | null; task: string; what: string }) {
+  if (!error) return null;
+  return status === 501 ? <Pending task={task} what={what} /> : <Alert>{error}</Alert>;
 }
 
 export function Todo({ task, children }: { task: string; children?: ReactNode }) {

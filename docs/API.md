@@ -121,3 +121,26 @@ Frontend (Б7) дуудаж буй оролт — **А10 хэрэгжүүлэх�
 | DELETE | `/api/bloom-verbs/{verb_id}` | А3 |  |
 | POST | `/api/cs2023/import` | А5 | жишигАчаалах(файл) |
 | GET | `/api/cs2023` | А5 | ?area=&q= |
+
+## Б8-ийн хүлээж буй хариу (санал)
+
+Хөтөлбөрийн шинжилгээ (proto-07), зарлал оруулах (proto-08), админ (proto-09) дэлгэцүүд доорх хэлбэрийг хүлээж байна (`frontend/src/api/types.ts`, `api/program.ts`). Endpoint `501` буцаавал дэлгэц "хэрэгжүүлэгдэж байна" мэдэгдэл харуулна. **А хэрэгжүүлэхдээ энэ хэлбэрийг баталгаажуулах эсвэл өөрчилж, энд засна уу.**
+
+| Endpoint | Хариуцагч | Хүсэлт | Хариу |
+|---|---|---|---|
+| `POST /api/programs/{id}/courses/{course_id}` | А4 | body-гүй | дурын JSON |
+| `GET /api/programs/{id}/batches` | А7 | — | `[{id, program_id, name, created_at, posting_count}]` |
+| `POST /api/programs/{id}/batches` | А7 | multipart: `name`, `file` (CSV, заавал `title`, `text`; сонголттой `posted_date`, `source`) | `{id, program_id, name, created_at, posting_count, errors: [{row, reason}]}` |
+| `GET /api/batches/{id}/postings` | А7 | — | `[{id, title, posted_date, source, skills: [str], status: processed\|no_skills\|pending}]` |
+| `POST /api/programs/{id}/analysis` | А9 | `{batch_id, min_frequency?}` | AnalysisRun (`{id, status, progress, ...}`), явцыг `GET /api/runs/{id}`-ээр асууна |
+| `GET /api/programs/{id}/matrix?kind=plo-cs2023\|plo-course` | А9 | — | `{kind, rows: [{id, code, name}], cols: [{id, code, name}], cells: [{link_id, row_id, col_id, score, strength, status}], run, covered_cols?}` |
+| `GET /api/runs/{id}/missing-skills` | А9 | — | `{run_id, total_postings, extracted_skills, market_coverage, min_frequency, skills: [{skill, frequency, count}]}` (`frequency` 0–1) |
+| `GET /api/users` | А3 | — | `[User]` (`{id, email, full_name, is_active, roles}`) |
+| `POST /api/users` | А3 | `{full_name, email, password, roles: [teacher\|coordinator\|admin]}` | `User` |
+| `PATCH /api/users/{id}` | А3 | `{full_name?, email?, is_active?}` | `User` |
+| `POST`/`DELETE /api/users/{id}/roles/{role}` | А3 | body-гүй | дурын JSON |
+| `GET /api/settings` | А3 | — | `[{key, value}]`; түлхүүр: `embedding_model`, `link_threshold`, `direct_threshold`, `llm_enabled` |
+| `PUT /api/settings/{key}` | А3 | `{value: str}` | `{key, value}`; буруу утгад 422 (босго 0–1, `link_threshold < direct_threshold`) |
+| `GET`/`POST /api/bloom-verbs` | А3 | `{verb, level}` | `[{id, verb, level}]` / `{id, verb, level}` |
+| `DELETE /api/bloom-verbs/{id}` | А3 | — | 204 |
+| `GET /api/cs2023` | А5 | — | `[{id, area, code, title}]` |
